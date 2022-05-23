@@ -1,7 +1,6 @@
 # Kotlin-Coroutines-
+패스트캠퍼스 강의 -> 효과적인 비동기처리를 위한 Kotlin Coroutines & Flow 마스터 by 김용욱 <br/>
 
-
-<br/>
 
 ## Coroutines Study Target
 ```
