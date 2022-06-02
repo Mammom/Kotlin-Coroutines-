@@ -18,5 +18,15 @@
 - produce 코루틴을 만들고 채널을 제공한다.
 - consumeEach 채널에서 반복해서 데이터를 받아간다.
 - produce를 사용하면 produceScope를사용하는데 CoroutineScope 인터페이스와 SendChannel 인터페이스를 함께 상속받습니다.
-- 
+- ProducerScope = CoroutineScope + SendChannel (this.send 와 this.coroutineContext를 사용할 수 있다.)
+- 확장함수를 사용하면 조금 더 간결하게 코드를 짤수 있다.
+~~~
+
+## 2. 채널 파이프 라인
+~~~
+- 파이프 라인은 일반적인 패턴이며 하나의 스트림을 프로튜서가 만들고, 다른 코루틴에서 그스트림을 읽어 새로운 스트림을 만드는 패턴
+- 채널을 이용해서 또다른 채널을 만드는것 
+- 처음 만드는채널은 리스브 채널로 receiv메서드 send 메서드 X
+- 채널은 리스브 채널 + 센드 채널
+- for(x in stringNumbers)을 통해 채널을 돌리수는 없다.
 ~~~
