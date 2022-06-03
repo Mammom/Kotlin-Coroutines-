@@ -29,4 +29,42 @@
 - 처음 만드는채널은 리스브 채널로 receiv메서드 send 메서드 X
 - 채널은 리스브 채널 + 센드 채널
 - for(x in stringNumbers)을 통해 채널을 돌리수는 없다.
+- 여러개의 채널을 순차적으로 데이터를 가공해나갈수 있다.
+  (홀수 생성이면 리스브 채널에서 수를 생성하고 다른 채널에서 조건문을 사용하여 분류할 수 있다.)
+- 파이프라인을 연속으로 타면서 원하는 결과를 얻을 수 있다.
+- 
+~~~
+
+~~~kt
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.*
+// 소수 판별식
+// 실용적인 코드보다는 파이프 라인의 사용을 보여준다. 
+fun CoroutineScope.numbersFrom(start: Int) = produce<Int> { //SC + CoroutineScope 2, 3, ...
+    var x = start
+    while (true) {
+        send(x++)
+    }
+}
+
+fun CoroutineScope.filter(numbers: ReceiveChannel<Int>, prime: Int): ReceiveChannel<Int> = produce {
+    for (i in numbers) {
+        if (i % prime != 0) {
+            send(i)
+        }
+    }
+}
+
+
+fun main() = runBlocking<Unit> {
+    var numbers = numbersFrom(2) // RC , 3 ,4 ,5 //채널이 대체. //채널 대체
+
+    repeat(10) {
+        val prime = numbers.receive() // 2    들어간건 numbers에 빠지면서 필터에는 3부터 들어간다.
+        println(prime)
+        numbers = filter(numbers, prime) // nubmer : 3,4,5 prime 2
+    }
+    println("완료")
+    coroutineContext.cancelChildren()
+}
 ~~~
