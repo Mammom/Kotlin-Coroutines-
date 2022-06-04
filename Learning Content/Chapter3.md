@@ -68,3 +68,21 @@ fun main() = runBlocking<Unit> {
     coroutineContext.cancelChildren()
 }
 ~~~
+
+## 3. 채널 팬아웃, 팬인
+~~~
+- 팬아웃은 여러 코루틴이 동시에 채널을 구독하는 것이다.
+- 팬인은 반대로 생산자가 많은것
+- 공정한 채널 두개의 코루틴에서 채널을 서로 사용할때 공정하게 기회를 준다는것을 알수 있다.
+- 채널은 공평하게 동작을한다.
+- select를 사용하면 먼저 끝나는 요청을 처리하는것이 중요할 수 있습니다. 
+- 두개의 채널이 있다면 먼저오는 데이터를 먼저 수행한다.
+
+
+- 채널에 대해 onReceive를 사용하는 것 이외에도 아래의 상황에서 사용할 수있다.
+Job - onJoin // 런치를 사용하면 누구의 런치가 빨리 끝나는냐를 볼수 있다.
+Deferred - onAwait // 작업이 끝났을때 .onAwait를 작동해 달라고 사용할 수 있다.
+SendChannel - onSend
+ReceiveChannel - onReceive, onReceiveCatching
+delay - onTimeout
+~~~
