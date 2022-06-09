@@ -48,3 +48,116 @@ fun main() = runBlocking {
     println("$sum")
 }
 ~~~
+
+~~~kt
+suspend fun loadContributorsConcurrent(service: GitHubService, req: RequestData): List<User> = coroutineScope {
+    val repos = service
+        .getOrgRepos(req.org)
+        .also { logRepos(req, it) }
+        .body() ?: listOf()
+
+    repos.map{ repo ->
+        async {
+            service
+                .getRepoContributors(req.org, repo.name)
+                .also { logUsers(repo, it) }
+                .bodyList()
+        }
+    }.awaitAll().toList().flatten().aggregate()
+    // 리스트로 만들어진 repos를 awaitall로 전부 기다리겠다
+    // flatten()을하는 이유는 리턴값이 리스트의 리스트이기때문에 한번 풀어주는것이다.
+
+    // 결과 자체는 List<List<User>> -> 풀어주는게 flatten() -> List<User>로 풀리게 된다.
+    // scope에 소속이 되어있기 때문에 리턴이 필요하지않는다.
+    // 부모에게 소속되어 있다고 본다.
+}
+~~~
+
+~~~kt
+suspend fun loadContributorsNotCancellable(service: GitHubService, req: RequestData): List<User> {
+    val repos = service
+        .getOrgRepos(req.org)
+        .also { logRepos(req, it) }
+        .body() ?: listOf()
+
+    return repos.map{ repo ->
+        GlobalScope.async {
+            log("starting loading for ${repo.name}")
+            delay(3000)
+            service
+                .getRepoContributors(req.org, repo.name)
+                .also { logUsers(repo, it) }
+                .bodyList()
+        }
+    }.awaitAll().toList().flatten().aggregate()
+    // scope밖이기 때문에 리턴이 필요하다.
+    // 일반 함수의 반환값이 list<user>이기때문에 return을 해야한다.
+    // 위 코드는 독립적인 코드인것이기 때문이다.
+    // 부모가 아닌 Global이기 때문에 독자적인것이다.
+    // 취소가 되지않는 이유는 구조화된 동시성안에 포함되지않는것이때문이다.
+    // 누구의 자식도 아니기 때문에 취소가 되지않는것 이다.
+}
+~~~
+
+~~~kt
+suspend fun loadContributorsProgress(
+    service: GitHubService,
+    req: RequestData,
+    updateResults: suspend (List<User>, completed: Boolean) -> Unit
+) {
+    val repos = service
+        .getOrgRepos(req.org)
+        .also { logRepos(req, it) }
+        .body() ?: listOf()
+
+    val allUsers = mutableListOf<User>()
+
+    for ((index, repo) in repos.withIndex()){
+        val users = service
+            .getRepoContributors(req.org, repo.name)
+            .also { logUsers(repo, it) }
+            .bodyList()
+        allUsers += users
+        allUsers.aggregate()
+        val isCompleted = index == repos.lastIndex
+        updateResults(allUsers, isCompleted)
+    }
+}
+~~~
+
+~~~kt
+//채널은 두개의 코루틴 사이에서 정보를 안전하게 보낼수 있다.
+//send와 receive가 있다.
+suspend fun loadContributorsChannels(
+    service: GitHubService,
+    req: RequestData,
+    updateResults: suspend (List<User>, completed: Boolean) -> Unit
+) {
+    coroutineScope {
+        val repos = service
+            .getOrgRepos(req.org)
+            .also { logRepos(req, it) }
+            .body() ?: listOf()
+
+        val allUsers = mutableListOf<User>()
+        val channel = Channel<List<User>>()
+
+        for(repo in repos){
+            launch {
+                val users = service
+                    .getRepoContributors(req.org, repo.name)
+                    .also { logUsers(repo, it) }
+                    .bodyList()
+                channel.send(users)
+            }
+        }
+
+        repeat(repos.size){ index ->
+            val users = channel.receive()
+            allUsers += users // a 10, a20 -> a 30
+            val isCompleted = index == repos.lastIndex
+            updateResults(allUsers.aggregate(), isCompleted)
+        }
+    }
+}
+~~~
