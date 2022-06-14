@@ -46,3 +46,39 @@
 - 예외가 없다면 만들수 있다.
 ~~~
 
+## 6. Coroutine
+~~~
+- Direct Style 같은 Straight-forward한 프로그래밍
+- 중단후 재개가 가능해 비동기 코드를 수월하게 작성할수 있다.
+- kotlin Coroutine의 특징은 callee에만 suspend 표시
+- 중단 가능한 함수는 모두 async로 시작
+- 반환 값은 Task<String>이라 await가 반드시 필요.
+~~~
+
+## 7. Suspension points
+~~~
+- 중단 가능 함수 호출 때마다 블록을 나눔
+- 중단 가능한 함수들은 상태 머신으로 
+~~~
+
+## 8. 어떻게 멀티스레드로 수행되나?
+~~~
+- intercept라는 메서드를 오버라이드해 동작을 변경할 수 있습니다.
+~~~
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
